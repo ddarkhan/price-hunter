@@ -1,6 +1,7 @@
 import http.client
 import json
 import os
+import re
 import ssl
 import time
 from .engine import total, timestamp
@@ -14,21 +15,39 @@ class TelegramError(Exception):
 
 class Telegram:
     def __init__(self, token=None, chat=None):
-        self.token = token or os.environ.get('TELEGRAM_BOT_TOKEN')
-        self.chat = chat or os.environ.get('TELEGRAM_CHAT_ID')
+        self.token = str(token or os.environ.get('TELEGRAM_BOT_TOKEN') or '').strip()
+        self.chat = str(chat or os.environ.get('TELEGRAM_CHAT_ID') or '').strip()
         self.ready = bool(self.token and self.chat)
 
     def send(self, text):
         if not self.ready:
             raise TelegramError('Telegram Secrets не настроены', ambiguous=False)
+        if not re.fullmatch(r'\d+:[A-Za-z0-9_-]+', self.token):
+            raise TelegramError('Неверный формат TELEGRAM_BOT_TOKEN: вставьте только токен, без кавычек и TELEGRAM_BOT_TOKEN=.', ambiguous=False)
+        if not re.fullmatch(r'-?\d+', self.chat):
+            raise TelegramError('Неверный формат TELEGRAM_CHAT_ID: вставьте только число, без кавычек и TELEGRAM_CHAT_ID=.', ambiguous=False)
         ambiguous = True
+        detail = 'нет подтверждённого ответа'
         for attempt in range(3):
             connection = http.client.HTTPSConnection('api.telegram.org', timeout=20, context=ssl.create_default_context())
             try:
                 body = json.dumps({'chat_id': self.chat, 'text': text[:4000], 'link_preview_options': {'is_disabled': True}})
                 connection.request('POST', '/bot' + self.token + '/sendMessage', body=body.encode(), headers={'Content-Type': 'application/json'})
                 response = connection.getresponse()
+                detail = 'HTTP ' + str(response.status)
                 result = json.loads(response.read(100000))
+                if not isinstance(result, dict):
+                    raise ValueError('Unexpected response structure')
+                hints = {
+                    'Bad Request: chat not found': 'чат не найден: проверьте chat ID и отправьте боту /start',
+                    'Forbidden: bot was blocked by the user': 'бот заблокирован пользователем',
+                    'Forbidden: bot was deactivated': 'бот деактивирован',
+                    'Unauthorized': 'токен отклонён Telegram',
+                    'Not Found': 'проверьте токен бота',
+                }
+                hint = hints.get(result.get('description'))
+                if hint:
+                    detail += '; ' + hint
                 if response.status == 429:
                     ambiguous = False
                     if attempt == 2:
@@ -42,11 +61,13 @@ class Telegram:
                     ambiguous = False
                 # Retrying an ambiguous server/network error could deliver duplicates.
                 break
-            except (OSError, ValueError, http.client.HTTPException):
+            except (OSError, ValueError, http.client.HTTPException) as error:
+                # Exception text and arbitrary API descriptions can contain secrets.
+                detail += '; ' + type(error).__name__
                 break
             finally:
                 connection.close()
-        raise TelegramError('Telegram не подтвердил отправку' + ('; возможна неопределённая доставка' if ambiguous else '; API отклонил запрос'), ambiguous=ambiguous)
+        raise TelegramError('Telegram не подтвердил отправку: ' + detail + ('; возможна неопределённая доставка' if ambiguous else '; API отклонил запрос'), ambiguous=ambiguous)
 
 
 def eligible(offer, previous, config):
