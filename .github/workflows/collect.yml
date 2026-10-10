@@ -1,0 +1,37 @@
+name: Collect prices
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+    inputs:
+      probe:
+        description: 'Check access to all sources, without Telegram notifications'
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: price-hunter-data
+  cancel-in-progress: false
+jobs:
+  collect:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.PRICE_HUNTER_ENABLED == 'true' }}
+    # Hosted by default; optionally set PRICE_HUNTER_RUNNER_LABELS to
+    # ["self-hosted", "price-hunter"] to use your own machine instead.
+    runs-on: ${{ fromJSON(vars.PRICE_HUNTER_RUNNER_LABELS || '"ubuntu-latest"') }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m collector.gitdata prepare --path runtime/data
+      - name: Collect and persist
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PROBE: ${{ inputs.probe }}
+        run: python scripts/collect_ci.py
+      - name: Source coverage
+        if: always()
+        run: python scripts/summary.py

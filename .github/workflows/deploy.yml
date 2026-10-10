@@ -1,0 +1,36 @@
+name: Publish interface
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'public/**', 'package*.json', 'vite.config.ts', 'tsconfig.json', 'index.html', '.github/workflows/deploy.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: price-hunter-interface
+  cancel-in-progress: true
+jobs:
+  deploy:
+    if: ${{ vars.CLOUDFLARE_PROJECT != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_REPOSITORY: ${{ github.repository }}
+          VITE_DATA_URL: https://raw.githubusercontent.com/${{ github.repository }}/price-data/catalog.json
+      - run: python scripts/check_public.py
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PROJECT }} --branch=main

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.cache/
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+runtime/
+price-hunter.zip
+*.log
+*.tsbuildinfo
+*.tmp

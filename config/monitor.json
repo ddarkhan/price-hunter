@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "city": "Астана",
+  "currency": "KZT",
+  "threshold": 90,
+  "preliminary_alerts": false,
+  "stale_minutes": 60,
+  "history_days": 30,
+  "history_min_days": 3,
+  "history_min_samples": 7,
+  "max_products": 16,
+  "max_tracked": 500,
+  "network": {"timeout": 15, "interval": 2, "max_requests": 45},
+  "enabled_categories": ["computers", "gadgets", "accessories", "appliances", "clothing", "food", "household", "tools", "sport"],
+  "shops": {
+    "technodom": {"enabled": true, "categories": [
+      {"key": "gadgets", "label": "Наушники", "url": "https://www.technodom.kz/astana/catalog/smartfony-i-gadzhety/naushniki/vse-naushniki"},
+      {"key": "computers", "label": "Ноутбуки", "url": "https://www.technodom.kz/astana/catalog/noutbuki-i-komp-jutery/noutbuki-i-aksessuary/noutbuki"},
+      {"key": "computers", "label": "SSD", "url": "https://www.technodom.kz/astana/catalog/noutbuki-i-komp-jutery/komplektujuschie/ssd-diski"},
+      {"key": "appliances", "label": "Стиральные машины", "url": "https://www.technodom.kz/astana/catalog/bytovaja-tehnika/uhod-za-odezhdoj/stiral-nye-mashiny"}
+    ], "watch_urls": []},
+    "ozon": {"enabled": true, "categories": [], "watch_urls": []},
+    "wildberries": {"enabled": true, "categories": [], "watch_urls": []},
+    "sulpak": {"enabled": true, "categories": [], "watch_urls": []},
+    "dns": {"enabled": true, "categories": [], "watch_urls": []},
+    "kaspi": {"enabled": true, "categories": [], "watch_urls": []},
+    "mechta": {"enabled": true, "categories": [], "watch_urls": []},
+    "alser": {"enabled": true, "categories": [], "watch_urls": []},
+    "fora": {"enabled": true, "categories": [], "watch_urls": []}
+  },
+  "verified_facts": {}
+}
