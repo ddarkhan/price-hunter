@@ -238,3 +238,5 @@ python scripts/package_project.py
 ```
 
 Создаётся `price-hunter.zip`. Лицензия кода — MIT; ограничения источников и платформ сохраняют силу.
+#   p r i c e - h u n t e r  
+ 
